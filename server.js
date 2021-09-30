@@ -25,21 +25,22 @@ mongoose
   .catch(err => console.log('DB CONNECTION ERR => ', err))
 
 // apply middlewares
-// var whitelist = ['http://localhost:3000', 'https://blinkapp.vercel.app']
-// app.use(
-//   cors({
-//     credentials: true,
-//     origin: function (origin, callback) {
-//       if (whitelist.indexOf(origin) !== -1) {
-//         callback(null, true)
-//       } else {
-//         callback(new Error('Not allowed by CORS'))
-//       }
-//     },
-//   })
-// )
+var whitelist = ['http://localhost:3000', 'https://blinkapp.vercel.app']
+app.use(
+  cors({
+    credentials: true,
+    origin: function (origin, callback) {
+      if (whitelist.indexOf(origin) !== -1 || !origin) {
+        callback(null, true)
+      } else {
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
+    optionsSuccessStatus: 200,
+  })
+)
 
-app.use(cors({ credentials: true, origin: 'https://blinkapp.vercel.app' }))
+// app.use(cors({ credentials: true, origin: 'https://blinkapp.vercel.app' }))
 app.use(express.json())
 app.use(cookieParser())
 app.use(morgan('dev'))
