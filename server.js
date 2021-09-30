@@ -25,10 +25,17 @@ mongoose
   .catch(err => console.log('DB CONNECTION ERR => ', err))
 
 // apply middlewares
+var whitelist = ['http://localhost:3000', 'https://blinkapp.vercel.app']
 app.use(
   cors({
     credentials: true,
-    origin: ['http://localhost:3000', 'https://blinkapp.vercel.app'],
+    origin: function (origin, callback) {
+      if (whitelist.indexOf(origin) !== -1) {
+        callback(null, true)
+      } else {
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
   })
 )
 app.use(express.json())
