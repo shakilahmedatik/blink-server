@@ -28,7 +28,7 @@ mongoose
 app.use(
   cors({
     credentials: true,
-    origin: ['http://localhost:3000', 'https://blinkapp.vercel.app/'],
+    origin: ['http://localhost:3000', 'https://blinkapp.vercel.app'],
   })
 )
 app.use(express.json())
