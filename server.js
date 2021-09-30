@@ -25,7 +25,12 @@ mongoose
   .catch(err => console.log('DB CONNECTION ERR => ', err))
 
 // apply middlewares
-app.use(cors())
+app.use(
+  cors({
+    credentials: true,
+    origin: ['http://localhost:3000', 'https://blinkapp.vercel.app/'],
+  })
+)
 app.use(express.json())
 app.use(cookieParser())
 app.use(morgan('dev'))
