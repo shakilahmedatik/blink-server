@@ -24,7 +24,7 @@ export const sendEmail = async (userEmail, shortCode) => {
       <i>blink.com</i>`, // html body
     })
     .catch(error => {
-      return res.send(error)
+      console.log(error)
     })
 
   console.log('Message sent: ', info.messageId)
