@@ -35,8 +35,6 @@ export const uploadImage = async (req, res) => {
 
 // Create Course
 export const create = async (req, res) => {
-  console.log('Course Data----->', req.body)
-  // return;
   try {
     const alreadyExist = await Course.findOne({
       slug: slugify(req.body.name.toLowerCase()),
@@ -49,6 +47,7 @@ export const create = async (req, res) => {
       instructor: req.user._id,
       ...req.body,
     }).save()
+    console.log(course)
 
     res.json(course)
   } catch (err) {
