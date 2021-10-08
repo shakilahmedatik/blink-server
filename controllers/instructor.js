@@ -10,7 +10,7 @@ export const makeInstructor = async (req, res) => {
     // 2. if user dont have stripe_account_id yet, then create new
     if (!user.stripe_account_id) {
       const account = await stripe.accounts.create({ type: 'express' })
-      // console.log('ACCOUNT => ', account.id)
+
       user.stripe_account_id = account.id
       user.save()
     }
@@ -21,7 +21,7 @@ export const makeInstructor = async (req, res) => {
       return_url: process.env.STRIPE_REDIRECT_URL,
       type: 'account_onboarding',
     })
-    //  console.log(accountLink)
+
     // 4. pre-fill any info such as email (optional), then send url response to frontend
     accountLink = Object.assign(accountLink, {
       'stripe_user[email]': user.email,
@@ -37,7 +37,7 @@ export const getAccountStatus = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).exec()
     const account = await stripe.accounts.retrieve(user.stripe_account_id)
-    // console.log("ACCOUNT => ", account);
+
     if (!account.charges_enabled) {
       return res.status(401).send('Unauthorized')
     } else {
