@@ -164,9 +164,13 @@ export const update = async (req, res) => {
       return res.status(400).send('Unauthorized')
     }
 
-    const updated = await Course.findOneAndUpdate({ slug }, req.body, {
-      new: true,
-    }).exec()
+    const updated = await Course.findOneAndUpdate(
+      { slug },
+      { ...req.body, slug: slugify(req.body.name.toLowerCase()) },
+      {
+        new: true,
+      }
+    ).exec()
 
     res.json(updated)
   } catch (err) {
@@ -187,6 +191,7 @@ export const updateLesson = async (req, res) => {
       { 'lessons._id': _id },
       {
         $set: {
+          'lessons.$.slug': slugify(title),
           'lessons.$.title': title,
           'lessons.$.content': content,
           'lessons.$.video': video,
@@ -204,6 +209,7 @@ export const updateLesson = async (req, res) => {
 
 export const removeLesson = async (req, res) => {
   const { slug, lessonId } = req.params
+  console.log(slug)
   const course = await Course.findOne({ slug }).exec()
   if (req.user._id != course.instructor) {
     return res.status(400).send('Unauthorized')
@@ -214,4 +220,63 @@ export const removeLesson = async (req, res) => {
   }).exec()
 
   res.json({ ok: true })
+}
+
+export const publishCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params
+    // find post
+    const courseFound = await Course.findById(courseId)
+      .select('instructor')
+      .exec()
+    // is owner?
+    if (req.user._id != courseFound.instructor._id) {
+      return res.status(400).send('Unauthorized')
+    }
+
+    let course = await Course.findByIdAndUpdate(
+      courseId,
+      { published: true },
+      { new: true }
+    ).exec()
+    // return;
+    res.json(course)
+  } catch (err) {
+    console.log(err)
+    return res.status(400).send('Course Publish Failed')
+  }
+}
+
+export const unpublishCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params
+    // find post
+    const courseFound = await Course.findById(courseId)
+      .select('instructor')
+      .exec()
+    // is owner?
+    if (req.user._id != courseFound.instructor._id) {
+      return res.status(400).send('Unauthorized')
+    }
+
+    let course = await Course.findByIdAndUpdate(
+      courseId,
+      { published: false },
+      { new: true }
+    ).exec()
+    // return;
+    res.json(course)
+  } catch (err) {
+    console.log(err)
+    return res.status(400).send('Course Unpublish Failed')
+  }
+}
+
+export const courses = async (req, res) => {
+  // console.log("all courses");
+  const all = await Course.find({ published: true })
+    .populate('instructor', '_id name')
+    .exec()
+  // console.log("============> ", all);
+  res.json(all)
 }

@@ -17,7 +17,12 @@ import {
   update,
   removeLesson,
   updateLesson,
+  publishCourse,
+  unpublishCourse,
+  courses,
 } from '../controllers/course'
+
+router.get('/courses', courses)
 
 // image
 router.post('/course/upload-image', uploadImage)
@@ -33,6 +38,9 @@ router.post(
   uploadVideo
 )
 router.post('/course/remove-video/:courseId', requireSignin, removeVideo)
+// publish or unpublish course
+router.put('/course/publish/:courseId', requireSignin, publishCourse)
+router.put('/course/unpublish/:courseId', requireSignin, unpublishCourse)
 // Lesson
 router.post('/course/lesson/:slug/:instructorId', requireSignin, addLesson)
 router.put('/course/lesson/:slug/:instructorId', requireSignin, updateLesson)
