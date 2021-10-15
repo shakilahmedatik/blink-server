@@ -1,8 +1,8 @@
 import mongoose from 'mongoose'
+const { Schema } = mongoose
+const { ObjectId } = Schema
 
-const { ObjectId } = mongoose.Schema
-
-const lessonSchema = new mongoose.Schema(
+const lessonSchema = new Schema(
   {
     title: {
       type: String,
