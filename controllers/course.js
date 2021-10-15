@@ -6,6 +6,8 @@ import User from '../models/user'
 const imgbbUploader = require('imgbb-uploader')
 const cloudinary = require('cloudinary').v2
 const fs = require('fs')
+import queryString from 'query-string'
+const stripe = require('stripe')(process.env.STRIPE_SECRET)
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -322,5 +324,78 @@ export const freeEnrollment = async (req, res) => {
   } catch (err) {
     console.log(err)
     return res.status(400).send('Enrollment Failed!')
+  }
+}
+
+// Handle Paid Enrollment Request
+export const paidEnrollment = async (req, res) => {
+  try {
+    // Check if course is paid or free
+    const courseId = req.params.courseId
+    const course = await Course.findById(courseId).populate('instructor').exec()
+    if (!course.paid) return // Validation
+
+    //Application Fee 30%
+    const fee = (course.price * 30) / 100
+    // Create stripe session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      // purchase details
+      line_items: [
+        {
+          name: course.name,
+          amount: Math.round(course.price.toFixed(2) * 100),
+          currency: 'usd',
+          quantity: 1,
+        },
+      ],
+      // Charge buyer & transfer remaining balance to seller (after fee)
+      payment_intent_data: {
+        application_fee_amount: Math.round(fee.toFixed(2) * 100),
+        transfer_data: {
+          destination: course.instructor.stripe_account_id,
+        },
+      },
+      // Redirect url after successful payment
+      success_url: `${process.env.STRIPE_SUCCESS_URL}/${course._id}`,
+      cancel_url: process.env.STRIPE_CANCEL_URL,
+    })
+    console.log('Session Id---->', session)
+
+    await User.findByIdAndUpdate(req.user._id, {
+      stripeSession: session,
+    }).exec()
+
+    res.send(session.id)
+  } catch (err) {
+    console.log(err)
+    return res.status(400).send('Paid Enrollment Failed!')
+  }
+}
+
+export const stripeSuccess = async (req, res) => {
+  try {
+    // Find course
+    const course = await Course.findById(req.params.courseId).exec()
+    // Get user from db to get stripe session id
+    const user = await User.findById(req.user._id).exec()
+    // If no stripe session id -> Return
+    if (!user.stripeSession.id) return res.sendStatus(400)
+    // retrieve stripe session
+    const session = await stripe.checkout.sessions.retrieve(
+      user.stripeSession.id
+    )
+    console.log('STRIPE SUCCESS--->', session)
+    // If session payment status is paid, push course to user's course array.
+    if (session.payment_status === 'paid') {
+      await User.findByIdAndUpdate(user._id, {
+        $addToSet: { courses: course._id },
+        $set: { stripeSession: {} },
+      }).exec()
+    }
+    res.json({ success: true, course })
+  } catch (err) {
+    console.log('Stripe Success Error-->', err)
+    res.json({ success: false })
   }
 }
