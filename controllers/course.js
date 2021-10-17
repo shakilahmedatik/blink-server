@@ -1,12 +1,12 @@
-import { nanoid } from 'nanoid'
-import slugify from 'slugify'
 import Course from '../models/course'
 import User from '../models/user'
-// import { readFileSync } from 'fs'
+import Completed from '../models/completed'
+import { nanoid } from 'nanoid'
+import slugify from 'slugify'
+import queryString from 'query-string'
+const fs = require('fs')
 const imgbbUploader = require('imgbb-uploader')
 const cloudinary = require('cloudinary').v2
-const fs = require('fs')
-import queryString from 'query-string'
 const stripe = require('stripe')(process.env.STRIPE_SECRET)
 
 cloudinary.config({
@@ -397,5 +397,76 @@ export const stripeSuccess = async (req, res) => {
   } catch (err) {
     console.log('Stripe Success Error-->', err)
     res.json({ success: false })
+  }
+}
+
+export const userCourses = async (req, res) => {
+  const user = await User.findById(req.user._id).exec()
+  const courses = await Course.find({ _id: { $in: user.courses } })
+    .populate('instructor', '_id name')
+    .exec()
+  res.json(courses)
+}
+
+export const markCompleted = async (req, res) => {
+  const { courseId, lessonId } = req.body
+  // console.log(courseId, lessonId);
+  // find if user with that course is already created
+  const existing = await Completed.findOne({
+    user: req.user._id,
+    course: courseId,
+  }).exec()
+
+  if (existing) {
+    // update
+    const updated = await Completed.findOneAndUpdate(
+      {
+        user: req.user._id,
+        course: courseId,
+      },
+      {
+        $addToSet: { lessons: lessonId },
+      }
+    ).exec()
+    res.json({ ok: true })
+  } else {
+    // create
+    const created = await new Completed({
+      user: req.user._id,
+      course: courseId,
+      lessons: lessonId,
+    }).save()
+    res.json({ ok: true })
+  }
+}
+
+export const listCompleted = async (req, res) => {
+  try {
+    const list = await Completed.findOne({
+      user: req.user._id,
+      course: req.body.courseId,
+    }).exec()
+    list && res.json(list.lessons)
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+export const markIncomplete = async (req, res) => {
+  try {
+    const { courseId, lessonId } = req.body
+
+    const updated = await Completed.findOneAndUpdate(
+      {
+        user: req.user._id,
+        course: courseId,
+      },
+      {
+        $pull: { lessons: lessonId },
+      }
+    ).exec()
+    res.json({ ok: true })
+  } catch (err) {
+    console.log(err)
   }
 }
